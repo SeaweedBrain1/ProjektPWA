@@ -6,13 +6,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const locationSection = document.getElementById('location-section');
     const coordsText = document.getElementById('coords-text');
     const shareBtn = document.getElementById('share-btn');
-    
     let currentStream;
     let photoBlob;
     let map;
     let marker;
     let currentLat, currentLng;
-
+ 
     async function initCamera() {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ 
@@ -25,30 +24,29 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('Nie można uzyskać dostępu do kamery. Sprawdź uprawnienia.');
         }
     }
-
+ 
     captureBtn.addEventListener('click', () => {
         const context = canvas.getContext('2d');
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        
         canvas.toBlob((blob) => {
             photoBlob = blob;
         }, 'image/jpeg');
-
+ 
         video.classList.add('d-none');
         canvas.classList.remove('d-none');
         captureBtn.classList.add('d-none');
         retakeBtn.classList.remove('d-none');
         locationSection.classList.remove('d-none');
-
+ 
         if (currentStream) {
             currentStream.getTracks().forEach(track => track.stop());
         }
-
+ 
         getLocation(); 
     });
-
+ 
     retakeBtn.addEventListener('click', () => {
         video.classList.remove('d-none');
         canvas.classList.add('d-none');
@@ -57,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
         locationSection.classList.add('d-none');
         initCamera(); 
     });
-
+ 
     function getLocation() {
         if (navigator.geolocation) {
             coordsText.textContent = "Pobieranie dokładnej lokalizacji...";
@@ -78,39 +76,39 @@ document.addEventListener('DOMContentLoaded', () => {
             coordsText.textContent = "Twoja przeglądarka nie wspiera geolokalizacji.";
         }
     }
-
+ 
     function showMap(lat, lng) {
         if (map) {
             map.setView([lat, lng], 16);
             marker.setLatLng([lat, lng]);
             return;
         }
-
+ 
         map = L.map('map').setView([lat, lng], 16);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors'
         }).addTo(map);
-
+ 
         marker = L.marker([lat, lng]).addTo(map)
             .bindPopup('Miejsce zdarzenia')
             .openPopup();
     }
-
+ 
     shareBtn.addEventListener('click', async () => {
         if (!photoBlob || !currentLat || !currentLng) {
             alert('Najpierw zrób zdjęcie i poczekaj na lokalizację GPS.');
             return;
         }
-
+ 
         const file = new File([photoBlob], 'wykroczenie.jpg', { type: 'image/jpeg' });
-        const mapLink = `https://www.openstreetmap.org/?mlat=${currentLat}&mlon=${currentLng}#map=18/${currentLat}/${currentLng}`;
-
+        const mapLink = `https://www.google.com/maps?q=${currentLat},${currentLng}`;
+ 
         const shareData = {
             title: 'Zgłoszenie e-Konfident',
-            text: `Zgłaszam incydent w tej lokalizacji: ${mapLink}`,
+            text: `Zgłaszam wykroczenie. Lokalizacja: ${mapLink}`,
             files: [file]
         };
-
+ 
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
             try {
                 await navigator.share(shareData);
@@ -121,7 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
             alert(`Udostępnianie niedostępne. Link do mapy: ${mapLink}`);
         }
     });
-
+ 
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('./sw.js')
@@ -129,6 +127,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 .catch(err => console.error(err));
         });
     }
-
+ 
     initCamera();
 });
